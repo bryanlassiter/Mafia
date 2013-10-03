@@ -94,7 +94,6 @@ class Player(object):
         self.lng = lng
         self.userID = userID
         self.isWerewolf = isWerewolf
-va
 
 if __name__ == '__main__':
     init_db()
