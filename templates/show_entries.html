@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+
+  {% endif %}
+  <form action="{{ url_for('add_user')}}" method=post class=add-user>
+	  <dl>
+		  <dt>First Name:
+		  <dd><input type=text size=30 name=firstName>
+		  <dt>Last Name:
+		  <dd><input type=text size=30 name=lastName>
+		  <dt>Username:
+	      <dd><input type=text size=30 name=userName>
+		  <dt>Password
+		  <dd><input type=text size=30 name=hashedPassword>
+		  <dt>Is Admin?:
+		  <dd><input type=text size=30 name=isAdmin>
+		  <dd><input type=submit value=Add>
+		</dl>
+	  </form>
+  <ul class=entries>
+  {% for user in users %}
+    <li><h2>{{ user.firstName }} {{ user.lastName }}</h2>
+  {% else %}
+    <li><em>No users</em>
+  {% endfor %}
+  </ul>
+{% endblock %}
