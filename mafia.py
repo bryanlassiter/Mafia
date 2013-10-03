@@ -54,7 +54,7 @@ def show_users():
     db = get_db()
     cur = db.execute('select firstName, lastName from users order by firstName')
     users = cur.fetchall()
-    return render_template('show_entries.html', users=users)
+    return render_template('homepage.html', users=users)
 
 @app.route('/add', methods=['POST'])
 def add_user():
