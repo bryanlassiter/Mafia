@@ -8,13 +8,13 @@ app = Flask(__name__)
 
 # Load default config and override config from an environment variable
 app.config.update(dict(
-    DATABASE='/tmp/flaskr.db',
+    DATABASE='/tmp/mafia.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
     PASSWORD='default'
 ))
-app.config.from_envvar('FLASKR_SETTINGS', silent=True)
+app.config.from_envvar('MAFIA_SETTINGS', silent=True)
 
 
 def connect_db():
@@ -56,13 +56,6 @@ def show_users():
     users = cur.fetchall()
     return render_template('show_entries.html', users=users)
 
-"""def show_entries():
-    db = get_db()
-    cur = db.execute('select title, text from entries order by id desc')
-    entries = cur.fetchall()
-    return render_template('show_entries.html', entries=entries)"""
-
-
 @app.route('/add', methods=['POST'])
 def add_user():
     db = get_db()
@@ -71,16 +64,6 @@ def add_user():
     db.commit()
     flash('New user was successfully posted')
     return redirect(url_for('show_users'))
-"""def add_entry():
-    if not session.get('logged_in'):
-        abort(401)
-    db = get_db()
-    db.execute('insert into entries (title, text) values (?, ?)',
-                 [request.form['title'], request.form['text']])
-    db.commit()
-    flash('New entry was successfully posted')
-    return redirect(url_for('show_entries'))"""
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -111,7 +94,7 @@ class Player(object):
         self.lng = lng
         self.userID = userID
         self.isWerewolf = isWerewolf
-
+va
 
 if __name__ == '__main__':
     init_db()
