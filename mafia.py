@@ -2,11 +2,8 @@ from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
-
-# create our little application :)
 app = Flask(__name__)
 
-# Load default config and override config from an environment variable
 app.config.update(dict(
     DATABASE='/tmp/mafia.db',
     DEBUG=True,
@@ -41,6 +38,11 @@ def get_db():
         g.sqlite_db = connect_db()
     return g.sqlite_db
 
+def query_db(query, args=(), one=False):
+    cur = get_db().execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
 
 @app.teardown_appcontext
 def close_db(error):
@@ -93,6 +95,42 @@ class Player(object):
         self.lat = lat
         self.lng = lng
         self.userID = userID
+        self.isWerewolf = isWerewolf
+    
+    def getID():
+        return id
+    
+    def setID(id):
+        self.id = id
+    
+    def isDead():
+        return isDead
+        
+    def setDead(isDead):
+        self.isDead = isDead
+        
+    def getLng():
+        return lng
+        
+    def getLat():
+        return lat
+        
+    def setLng(lng):
+        self.lng = lng
+        
+    def setLat():
+        self.lat = lat
+        
+    def getUserID():
+        return userID
+        
+    def setUserID(userID):
+        self.userID = userID
+        
+    def isWerewolf():
+        return isWerewolf
+        
+    def setWerewolf(isWerewolf):
         self.isWerewolf = isWerewolf
 
 if __name__ == '__main__':
