@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block body %}
+
+  {% if session.logged_in %}
+  <form action="{{ url_for('home_game')}}" method=post>
+	  <dl>
+		  <dt>Go to the game screen
+		  <dd><input type=submit value=Go!>
+	  </dl>
+  </form>
+  <form action="{{ url_for('create_game')}}" method=post class=create-game>
+  <dl>
+	  <dt>Create a new game:
+	  <dt>What should the day/night cycle be? (in minutes):
+	  <dd><input type=text size=30 name=dayNight>
+	  <dd><input type=submit value=Create>
+  </dl>
+  </form>
+  <form action="{{ url_for('start_game')}}" method=post class=start-game>
+  <dl>
+	  <dd><input type=submit value=Start>
+  </dl>
+  </form>
+  <ul class=games>
+  {% for game in games %}
+    <h2>{{ game.dateCreated }} {{ game.time }}</h2>
+  {% else %}
+    <li><em>No games</em>
+  {% endfor %}
+  </ul>
+  <form action="{{ url_for('join_game')}}" method=post class=join-game>
+  <dl>
+	  <dt>Would you like to join a game?
+	  <dd><input type=submit value=Join>
+  </dl>
+  </form>
+  <ul class=players>
+  {% for player in players %}
+	<li><h2>{{player.id}}</h2>
+  {% else %}
+	<li><em>No players</em>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  {% endblock %}

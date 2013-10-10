@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block body %}
+<h4>Status: {{ status }}<br>
+	Current Time Period: {{ timePeriod }}</h4>
+	<h3>Players:</h3>
+    {% for player in players %}
+      <li><h3>{{ player.id }} -- {{ player.isWerewolf }}</h3>
+    {% else %}
+      <em>No players</em>
+    {% endfor %}
+	
+	<!--
+		<form action="{{ url_for('kill')}}" method=post id='dropdown'>
+		<h3>Select a user to vote for:</h3>
+		<input type="submit">
+	</form>
+	
+	<select name='dropdown'>
+		{% for row in players %}
+		<option value=row.userName>{{row.userName}}</option>
+		{% endfor %}
+	</select>
+		-->
+	{% endblock %}

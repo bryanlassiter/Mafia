@@ -1,25 +1,23 @@
+from daos import *
+import datetime, time, random
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+     render_template, flash, json
 
 app = Flask(__name__)
 
 app.config.update(dict(
     DATABASE='/tmp/mafia.db',
     DEBUG=True,
-    SECRET_KEY='development key',
-    USERNAME='admin',
-    PASSWORD='default'
+    SECRET_KEY='development key'
 ))
 app.config.from_envvar('MAFIA_SETTINGS', silent=True)
-
 
 def connect_db():
     """Connects to the specific database."""
     rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
-
 
 def init_db():
     """Creates the database tables."""
@@ -28,7 +26,6 @@ def init_db():
         with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
-
 
 def get_db():
     """Opens a new database connection if there is none yet for the
@@ -44,12 +41,29 @@ def query_db(query, args=(), one=False):
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
+def check_authorization(username, password):
+    db = get_db()
+    cur = db.execute('select userName, hashedPassword from users')
+    rows = cur.fetchall()
+    for row in rows:
+        if row[0] == username and row[1] == password:
+            return bool(1)
+    return bool(0)
+    
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
+@app.route('/game_show')
+def show_games():
+    db = get_db()
+    cur = db.execute('select dateCreated, time from games order by dateCreated')
+    games = cur.fetchall()
+    cur1 = db.execute('select id from players order by id')
+    players = cur1.fetchall() 
+    return render_template('loggedin.html', games=games, players=players)
 
 @app.route('/')
 def show_users():
@@ -71,16 +85,115 @@ def add_user():
 def login():
     error = None
     if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME']:
-            error = 'Invalid username'
-        elif request.form['password'] != app.config['PASSWORD']:
-            error = 'Invalid password'
+        if not check_authorization(request.form['username'], request.form['password']):
+            error = 'Username/password combination are incorrect'
         else:
             session['logged_in'] = True
+            session['username'] = request.form['username']
             flash('You were logged in')
-            return redirect(url_for('show_users'))
+            return render_template('loggedin.html', error=error)
     return render_template('login.html', error=error)
 
+@app.route('/create_game', methods=['POST'])
+def create_game():
+    db = get_db()
+    x = db.execute('select count(id) from games')
+    y = x.fetchone()
+    if y[0] < 1:
+        Game(request.form['dayNight'], datetime.date.today())
+        dayNight = request.form['dayNight']
+        if dayNight == '' or dayNight <= 0:
+            dayNight = 1
+        db.execute('insert into games (dayNight, dateCreated) values (?, ?)',
+        [dayNight, datetime.date.today()])
+        db.commit()
+    else:
+        flash('A game is already created')
+    return redirect(url_for('show_games'))
+
+@app.route('/join_game', methods=['POST'])
+def join_game():
+    db = get_db()
+    x = db.execute('select id from users where userName=?', [session['username']])
+    y = x.fetchone()
+    db.execute('insert into players (isDead, lat, lng, userID, isWerewolf) values (?, ?, ?, ?, ?)',
+    (0, 0, 0, y[0], 0))
+    db.commit()
+    flash('You successfully joined a game')
+    return redirect(url_for('show_games'))
+
+@app.route('/start_game', methods=['POST'])
+def start_game():
+    db=get_db()
+    x = db.execute('select count(*) from games')
+    y = x.fetchone()
+    a = db.execute('select count(*) from players')
+    b = a.fetchone()
+    if (y[0] == 1 and b[0] > 0) :
+        werewolves = int(b[0] * .3)
+        if werewolves == 0:
+            werewolves = 1
+        while (werewolves != 0):
+            if b[0] == 1:
+                value = 1
+            else:
+                value = random.randrange(1,b[0])
+            p = db.execute('select isWerewolf from players where id=?', [value])
+            q = p.fetchone()
+            if q[0] == 1:
+                continue
+            db.execute('update players set isWerewolf=1 where id=?', [value])
+            db.commit()
+            werewolves = werewolves - 1
+        start = time.time()
+        db.execute('update games set time=?', [start])
+        db.commit()
+    else:
+        flash('A game must first be created')
+    return redirect(url_for('show_games'))
+    
+@app.route('/kill', methods=['POST', 'GET'])
+def kill():
+    db = get_db()
+    x = db.execute('select * from players where userName=?', session['username'])
+    y = x.fetchone()
+    a = db.execute('select * from games')
+    b = a.fetchone()
+    diff = (time.time() - b[3])
+    timeNow = (int(diff)/int(b[1]))
+    '''if (b[0] != None and y[5] == 1 and (timeNow/60) % 2 == 0):
+        m = db.execute('select * from players where isDead=0')
+        n = m.fetchall()
+        c = db.execute('select * from players where userName=?', [request.form['votee']])
+        d = c.fetchone()
+        db.execute('insert into kills (killerID, victimID, timestamp, lat, lng) values (?, ?, ?, ?, ?)',
+                    [x[0], d[1], time.time(), x[2], x[3]])
+        db.execute('update players set isDead=1 where userName=?', [request.form['votee']])
+        db.commit()
+        flash('You killed ?', [request.form['votee']])
+        return redirect(url_for('game_screen'))'''    
+
+@app.route('/game')
+def game_screen():
+    db = get_db()
+    x = db.execute('select count(*) from games')
+    y = x.fetchone()
+    a = db.execute('select * from games')
+    b = a.fetchone()
+    z = db.execute('select id, isWerewolf from players where isDead=0')
+    z1 = z.fetchall()
+    if (y[0] == 1 and b[0] != None):
+        status = 'Game in session'
+        diff = (time.time() - b[3])
+        timeNow = (int(diff)/int(b[1]))
+        if (timeNow/60) % 2 == 0:
+            timePeriod = 'Day'
+        else:
+            timePeriod = 'Night'
+    else:
+        status = 'Game not in session'
+        timePeriod = 'N/A'
+    return render_template('game.html', status=status, timePeriod=timePeriod, players=z1)
 
 @app.route('/logout')
 def logout():
@@ -88,51 +201,11 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('show_users'))
 
-class Player(object):
-    def __init__(self, id, isDead, lat, lng, userID, isWerewolf):
-        self.id = id
-        self.isDead = isDead
-        self.lat = lat
-        self.lng = lng
-        self.userID = userID
-        self.isWerewolf = isWerewolf
-    
-    def getID():
-        return id
-    
-    def setID(id):
-        self.id = id
-    
-    def isDead():
-        return isDead
-        
-    def setDead(isDead):
-        self.isDead = isDead
-        
-    def getLng():
-        return lng
-        
-    def getLat():
-        return lat
-        
-    def setLng(lng):
-        self.lng = lng
-        
-    def setLat():
-        self.lat = lat
-        
-    def getUserID():
-        return userID
-        
-    def setUserID(userID):
-        self.userID = userID
-        
-    def isWerewolf():
-        return isWerewolf
-        
-    def setWerewolf(isWerewolf):
-        self.isWerewolf = isWerewolf
+@app.route('/game_home', methods=['GET', 'POST'])
+def home_game():
+    error = None
+    return redirect(url_for('game_screen'))
 
 if __name__ == '__main__':
     init_db()
-    app.run()
+    app.run(debug = True)
