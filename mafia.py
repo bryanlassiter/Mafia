@@ -151,27 +151,31 @@ def start_game():
     else:
         flash('A game must first be created')
     return redirect(url_for('show_games'))
-    
+
 @app.route('/kill', methods=['POST', 'GET'])
 def kill():
     db = get_db()
-    x = db.execute('select * from players where userName=?', session['username'])
+    k = db.execute('select * from users where userName=?', [session['username']] )
+    l = k.fetchone()
+    x = db.execute('select * from players where userID=?', [l[0]])
     y = x.fetchone()
     a = db.execute('select * from games')
     b = a.fetchone()
     diff = (time.time() - b[3])
     timeNow = (int(diff)/int(b[1]))
-    '''if (b[0] != None and y[5] == 1 and (timeNow/60) % 2 == 0):
+    if (timeNow/60) % 2 == 0:
+        #y[5] == 1 b[0] != 0
+        e = db.execute('select * from users where userName=?', [request.form['dropdown']])
+        f = e.fetchall()
         m = db.execute('select * from players where isDead=0')
         n = m.fetchall()
-        c = db.execute('select * from players where userName=?', [request.form['votee']])
-        d = c.fetchone()
         db.execute('insert into kills (killerID, victimID, timestamp, lat, lng) values (?, ?, ?, ?, ?)',
-                    [x[0], d[1], time.time(), x[2], x[3]])
-        db.execute('update players set isDead=1 where userName=?', [request.form['votee']])
+                    [x[0], f[0], time.time(), x[2], x[3]])
+        db.execute('update players set isDead=1 where id=?', f[0])
         db.commit()
-        flash('You killed ?', [request.form['votee']])
-        return redirect(url_for('game_screen'))'''    
+        flash('You killed ?', [request.form['dropdown']])
+        return redirect(url_for('game_screen'))
+    return redirect(url_for('game_screen'))   
 
 @app.route('/game')
 def game_screen():

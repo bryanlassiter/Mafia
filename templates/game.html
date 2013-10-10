@@ -9,16 +9,14 @@
       <em>No players</em>
     {% endfor %}
 	
-	<!--
-		<form action="{{ url_for('kill')}}" method=post id='dropdown'>
+	<form action="{{ url_for('kill')}}">
 		<h3>Select a user to vote for:</h3>
-		<input type="submit">
+		<select name='dropdown'>
+			{% for row in players %}
+			<option value="{{row.id}}">{{row.id}}</option>
+			{% endfor %}
+		</select>
+		<input type="submit" value "Submit">
 	</form>
 	
-	<select name='dropdown'>
-		{% for row in players %}
-		<option value=row.userName>{{row.userName}}</option>
-		{% endfor %}
-	</select>
-		-->
 	{% endblock %}
